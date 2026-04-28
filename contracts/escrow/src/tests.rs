@@ -544,6 +544,34 @@ fn test_duplicate_game_id_rejected() {
 }
 
 #[test]
+fn test_duplicate_game_id_fails() {
+    let (env, contract_id, _oracle, player1, player2, token, _admin) = setup();
+    let client = EscrowContractClient::new(&env, &contract_id);
+    let player3 = Address::generate(&env);
+    let player4 = Address::generate(&env);
+
+    client.create_match(
+        &player1,
+        &player2,
+        &100,
+        &token,
+        &String::from_str(&env, "dup_game_id"),
+        &Platform::Lichess,
+    );
+    assert_eq!(
+        client.try_create_match(
+            &player3,
+            &player4,
+            &100,
+            &token,
+            &String::from_str(&env, "dup_game_id"),
+            &Platform::Lichess,
+        ),
+        Err(Ok(Error::DuplicateGameId))
+    );
+}
+
+#[test]
 #[should_panic(expected = "Error(Contract, #4)")]
 fn test_unauthorized_player_cannot_cancel() {
     let (env, contract_id, _oracle, player1, player2, token, _admin) = setup();

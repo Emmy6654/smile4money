@@ -129,6 +129,11 @@ impl EscrowContract {
             return Err(Error::AlreadyExists);
         }
 
+        // STATE TRANSITION: (none) → Pending
+        // A brand-new match starts in Pending. No funds are held yet.
+        // Valid next transitions:
+        //   • Pending → Active    : both players call deposit()
+        //   • Pending → Cancelled : either player calls cancel_match()
         let m = Match {
             id,
             player1,
@@ -217,6 +222,12 @@ impl EscrowContract {
         }
 
         if m.player1_deposited && m.player2_deposited {
+            // STATE TRANSITION: Pending → Active
+            // Both players have now deposited their stake. The game is in progress.
+            // Valid next transitions:
+            //   • Active → Completed : oracle calls submit_result()
+            // Note: cancel_match() is rejected once Active; the match must be resolved
+            //       via submit_result().
             m.state = MatchState::Active;
             env.events().publish(
                 (Symbol::new(&env, "match"), symbol_short!("activated")),
@@ -303,6 +314,9 @@ impl EscrowContract {
             }
         }
 
+        // STATE TRANSITION: Active → Completed
+        // The oracle has submitted a verified result and the payout has been executed.
+        // This is a terminal state — no further transitions are possible.
         m.state = MatchState::Completed;
         env.storage()
             .persistent()
@@ -349,6 +363,10 @@ impl EscrowContract {
             client.transfer(&env.current_contract_address(), &m.player2, &m.stake_amount);
         }
 
+        // STATE TRANSITION: Pending → Cancelled
+        // Either player may cancel before both deposits are made. Any deposit already
+        // transferred is refunded above. This is a terminal state — no further
+        // transitions are possible.
         m.state = MatchState::Cancelled;
         env.storage()
             .persistent()

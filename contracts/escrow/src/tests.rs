@@ -409,6 +409,7 @@ fn test_submit_result_on_pending_match_fails() {
     );
 }
 
+// Issue #197: submit_result on an already Completed match should return InvalidState (no double-payout)
 #[test]
 fn test_submit_result_on_completed_match_fails() {
     let (env, contract_id, oracle, player1, player2, token, _admin) = setup();

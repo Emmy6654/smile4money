@@ -293,7 +293,7 @@ fn test_deposit_into_completed_match_fails() {
 
     assert_eq!(
         client.try_deposit(&id, &player1),
-        Err(Ok(Error::InvalidState))
+        Err(Ok(Error::MatchCompleted))
     );
 }
 
@@ -314,7 +314,7 @@ fn test_deposit_into_cancelled_match_fails() {
 
     assert_eq!(
         client.try_deposit(&id, &player1),
-        Err(Ok(Error::InvalidState))
+        Err(Ok(Error::MatchCancelled))
     );
 }
 

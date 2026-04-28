@@ -25,6 +25,9 @@ use soroban_sdk::contracterror;
 /// | 12   | InvalidPlayers     | player1 and player2 must be different addresses      |
 /// | 13   | GameIdMismatch     | Oracle submitted a result for the wrong game_id      |
 /// | 14   | DuplicateGameId    | game_id is already linked to another match           |
+/// | 15   | TransferFailed     | token transfer failed                                |
+/// | 16   | MatchCancelled     | deposit rejected: match has been cancelled           |
+/// | 17   | MatchCompleted     | deposit rejected: match has already completed        |
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
@@ -77,6 +80,12 @@ pub enum Error {
     DuplicateGameId = 14,
     /// token transfer failed
     TransferFailed = 15,
+
+    /// [E016] Deposit rejected because the match has been cancelled.
+    MatchCancelled = 16,
+
+    /// [E017] Deposit rejected because the match has already completed.
+    MatchCompleted = 17,
 }
 
 impl core::fmt::Display for Error {
@@ -110,6 +119,12 @@ impl core::fmt::Display for Error {
                 write!(f, "[E013] GameIdMismatch: oracle game_id does not match the stored game_id"),
             Error::DuplicateGameId =>
                 write!(f, "[E014] DuplicateGameId: game_id is already linked to another match"),
+            Error::TransferFailed =>
+                write!(f, "[E015] TransferFailed: token transfer failed"),
+            Error::MatchCancelled =>
+                write!(f, "[E016] MatchCancelled: deposit rejected — match has been cancelled"),
+            Error::MatchCompleted =>
+                write!(f, "[E017] MatchCompleted: deposit rejected — match has already completed"),
         }
     }
 }

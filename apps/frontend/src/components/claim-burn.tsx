@@ -114,16 +114,18 @@ export function ClaimBurn({
       </form>
 
       {/* Feedback */}
-      {status === 'success' && (
-        <p className="feedback success" role="status" data-testid="success-msg">
-          {mode === 'claim' ? 'Claimed successfully!' : 'Burned successfully!'}
-        </p>
-      )}
-      {status === 'error' && (
-        <p className="feedback error" role="alert" data-testid="error-msg">
-          {errorMsg}
-        </p>
-      )}
+      <div aria-live="polite" aria-atomic="true">
+        {status === 'success' && (
+          <p className="feedback success" role="status" data-testid="success-msg">
+            {mode === 'claim' ? 'Claimed successfully!' : 'Burned successfully!'}
+          </p>
+        )}
+        {status === 'error' && (
+          <p className="feedback error" role="alert" data-testid="error-msg">
+            {errorMsg}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

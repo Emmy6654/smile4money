@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { WalletStatus, Network } from '../types';
 
 declare global {
@@ -54,8 +54,13 @@ async function fetchHorizonBalance(
   return native ? native.balance : '0';
 }
 
+function getInitialStatus(): WalletStatus {
+  if (typeof window === 'undefined') return 'disconnected';
+  return window.freighterApi ? 'disconnected' : 'notInstalled';
+}
+
 export function useStellarWallet(): StellarWallet {
-  const [status, setStatus] = useState<WalletStatus>('disconnected');
+  const [status, setStatus] = useState<WalletStatus>(getInitialStatus);
   const [address, setAddress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
@@ -64,6 +69,11 @@ export function useStellarWallet(): StellarWallet {
   const freighter =
     typeof window !== 'undefined' ? window.freighterApi : undefined;
   const isInstalled = !!freighter;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setStatus(window.freighterApi ? 'disconnected' : 'notInstalled');
+  }, []);
 
   const refreshBalance = useCallback(async () => {
     if (!address) return;
@@ -77,8 +87,7 @@ export function useStellarWallet(): StellarWallet {
 
   const connect = useCallback(async () => {
     if (!freighter) {
-      setStatus('error');
-      setError('Freighter wallet not detected. Please install the Freighter browser extension.');
+      setStatus('notInstalled');
       return;
     }
 
@@ -120,10 +129,10 @@ export function useStellarWallet(): StellarWallet {
   const disconnect = useCallback(() => {
     setAddress(null);
     setBalance(null);
-    setStatus('disconnected');
+    setStatus(freighter ? 'disconnected' : 'notInstalled');
     setError(null);
     setNetwork('unknown');
-  }, []);
+  }, [freighter]);
 
   return {
     status,

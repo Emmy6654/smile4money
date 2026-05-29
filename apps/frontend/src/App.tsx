@@ -33,6 +33,7 @@ export function App() {
         }}
         onConnect={wallet.connect}
         onDisconnect={wallet.disconnect}
+        onRefreshBalance={wallet.refreshBalance}
         onClaim={handleClaim}
         onBurn={handleBurn}
       />

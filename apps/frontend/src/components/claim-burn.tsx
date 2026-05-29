@@ -5,9 +5,12 @@ interface ClaimBurnProps {
   walletState: WalletState;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  onRefreshBalance?: () => void;
   onClaim?: (amount: string) => Promise<string | void>;
   onBurn?: (amount: string) => Promise<string | void>;
 }
+
+type SubmitPhase = 'idle' | 'confirm' | 'pending' | 'success' | 'error';
 
 const STROOP_DECIMALS = 7;
 
@@ -48,12 +51,13 @@ export function ClaimBurn({
   walletState,
   onConnect,
   onDisconnect,
+  onRefreshBalance,
   onClaim,
   onBurn,
 }: ClaimBurnProps) {
   const [mode, setMode] = useState<Mode>('claim');
   const [amount, setAmount] = useState('');
-  const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
+  const [phase, setPhase] = useState<SubmitPhase>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [txHash, setTxHash] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
@@ -74,22 +78,28 @@ export function ClaimBurn({
 
   const valid = isValidAmount(amount) && !exceedsBalance;
 
+  function resetFeedback() {
+    setPhase('idle');
+    setTxHash(null);
+    setErrorMsg('');
+  }
+
   function handleMax() {
     if (walletState.balance !== null) {
       setAmount(stripTrailingZeros(walletState.balance));
       setTouched(true);
-      if (status !== 'idle' && status !== 'pending') {
-        setStatus('idle');
-        setTxHash(null);
-      }
+      resetFeedback();
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleRequestSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
+    setPhase('confirm');
+  }
 
-    setStatus('pending');
+  async function handleConfirm() {
+    setPhase('pending');
     setErrorMsg('');
     setTxHash(null);
     try {
@@ -100,21 +110,24 @@ export function ClaimBurn({
         hash = await onBurn?.(amount);
       }
       if (hash) setTxHash(hash);
-      setStatus('success');
+      setPhase('success');
       setAmount('');
       setTouched(false);
     } catch (err) {
-      setStatus('error');
+      setPhase('error');
       setErrorMsg(err instanceof Error ? err.message : 'Transaction failed');
     }
+  }
+
+  function handleCancelConfirm() {
+    setPhase('idle');
   }
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmount(e.target.value);
     setTouched(true);
-    if (status !== 'idle' && status !== 'pending') {
-      setStatus('idle');
-      setTxHash(null);
+    if (phase === 'success' || phase === 'error') {
+      resetFeedback();
     }
   }
 
@@ -127,10 +140,11 @@ export function ClaimBurn({
   function handleToggle(newMode: Mode) {
     setMode(newMode);
     setTouched(false);
-    if (status !== 'idle' && status !== 'pending') {
-      setStatus('idle');
-      setTxHash(null);
-    }
+    resetFeedback();
+  }
+
+  function handleDismissFeedback() {
+    resetFeedback();
   }
 
   const renderDecimalError =
@@ -138,6 +152,40 @@ export function ClaimBurn({
   const renderNegativeError =
     touched && amount && !isValidAmount(amount) && !renderDecimalError;
 
+  // ─── Not installed state ──────────────────────────────────────────
+  if (walletState.status === 'notInstalled') {
+    return (
+      <div className="claim-burn" data-testid="claim-burn">
+        <div className="not-installed">
+          <p className="not-installed__icon" data-testid="wallet-icon">⬡</p>
+          <p className="not-installed__text" data-testid="not-installed-msg">
+            Freighter wallet not detected
+          </p>
+          <p className="not-installed__hint">
+            Install the{' '}
+            <a
+              href="https://freighter.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="freighter-link"
+            >
+              Freighter browser extension
+            </a>{' '}
+            to connect your Stellar wallet.
+          </p>
+          <button
+            className="btn btn-connect"
+            onClick={onConnect}
+            data-testid="retry-connect-btn"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Disconnected state ──────────────────────────────────────────
   if (walletState.status === 'disconnected') {
     return (
       <div className="claim-burn" data-testid="claim-burn">
@@ -160,6 +208,7 @@ export function ClaimBurn({
     );
   }
 
+  // ─── Connecting state ────────────────────────────────────────────
   if (walletState.status === 'connecting') {
     return (
       <div className="claim-burn" data-testid="claim-burn">
@@ -171,6 +220,7 @@ export function ClaimBurn({
     );
   }
 
+  // ─── Wallet error state ──────────────────────────────────────────
   if (walletState.status === 'error') {
     return (
       <div className="claim-burn" data-testid="claim-burn">
@@ -190,6 +240,7 @@ export function ClaimBurn({
     );
   }
 
+  // ─── Connected state (main UI) ───────────────────────────────────
   return (
     <div className="claim-burn" data-testid="claim-burn">
       <div className="wallet-info">
@@ -204,6 +255,18 @@ export function ClaimBurn({
             >
               {formatNetwork(walletState.network)}
             </span>
+          )}
+          {onRefreshBalance && (
+            <button
+              type="button"
+              className="btn btn-icon"
+              onClick={onRefreshBalance}
+              disabled={phase === 'pending'}
+              aria-label="Refresh balance"
+              data-testid="refresh-balance-btn"
+            >
+              &#x21bb;
+            </button>
           )}
           {onDisconnect && (
             <button
@@ -236,7 +299,11 @@ export function ClaimBurn({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="claim-burn-form" data-testid="claim-burn-form">
+      <form
+        onSubmit={handleRequestSubmit}
+        className="claim-burn-form"
+        data-testid="claim-burn-form"
+      >
         <label htmlFor="amount">
           {mode === 'claim' ? 'Amount to claim' : 'Amount to burn'}
           {walletState.balance !== null && (
@@ -257,7 +324,7 @@ export function ClaimBurn({
               onChange={handleAmountChange}
               onKeyDown={handleKeyDown}
               placeholder="0.00"
-              disabled={status === 'pending'}
+              disabled={phase === 'pending'}
               data-testid="amount-input"
             />
             <span className="input-suffix">XLM</span>
@@ -267,7 +334,7 @@ export function ClaimBurn({
               type="button"
               className="btn btn-max"
               onClick={handleMax}
-              disabled={status === 'pending'}
+              disabled={phase === 'pending'}
               data-testid="max-btn"
             >
               Max
@@ -291,40 +358,89 @@ export function ClaimBurn({
           </p>
         )}
 
-        <button
-          type="submit"
-          className={`btn btn-${mode}`}
-          disabled={status === 'pending' || !valid}
-          data-testid="submit-btn"
-        >
-          {status === 'pending' ? (
-            <>
-              <span className="spinner spinner--small" data-testid="spinner" />
-              Processing…
-            </>
-          ) : mode === 'claim' ? (
-            'Claim'
-          ) : (
-            'Burn'
-          )}
-        </button>
+        {phase === 'confirm' && (
+          <div className="confirm-overlay" data-testid="confirm-overlay">
+            <p className="confirm-text">
+              {mode === 'claim' ? 'Claim' : 'Burn'}{' '}
+              <strong>{amount}</strong> XLM?
+            </p>
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="btn btn-cancel"
+                onClick={handleCancelConfirm}
+                data-testid="cancel-btn"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`btn btn-${mode}`}
+                onClick={handleConfirm}
+                data-testid="confirm-btn"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        )}
+
+        {phase !== 'confirm' && (
+          <button
+            type="submit"
+            className={`btn btn-${mode}`}
+            disabled={phase === 'pending' || !valid}
+            data-testid="submit-btn"
+          >
+            {phase === 'pending' ? (
+              <>
+                <span className="spinner spinner--small" data-testid="spinner" />
+                Processing…
+              </>
+            ) : mode === 'claim' ? (
+              'Claim'
+            ) : (
+              'Burn'
+            )}
+          </button>
+        )}
       </form>
 
       <div aria-live="polite" aria-atomic="true">
-        {status === 'success' && (
-          <p className="feedback success" role="status" data-testid="success-msg">
-            {mode === 'claim' ? 'Claimed' : 'Burned'} successfully!
-            {txHash && (
-              <span className="tx-hash" data-testid="tx-hash">
-                TX: {formatAddress(txHash)}
-              </span>
-            )}
-          </p>
+        {phase === 'success' && (
+          <div className="feedback success" role="status" data-testid="success-msg">
+            <span>
+              {mode === 'claim' ? 'Claimed' : 'Burned'} successfully!
+              {txHash && (
+                <span className="tx-hash" data-testid="tx-hash">
+                  TX: {formatAddress(txHash)}
+                </span>
+              )}
+            </span>
+            <button
+              type="button"
+              className="btn-dismiss"
+              onClick={handleDismissFeedback}
+              aria-label="Dismiss"
+              data-testid="dismiss-success-btn"
+            >
+              &times;
+            </button>
+          </div>
         )}
-        {status === 'error' && (
-          <p className="feedback error" role="alert" data-testid="error-msg">
-            {errorMsg}
-          </p>
+        {phase === 'error' && (
+          <div className="feedback error" role="alert" data-testid="error-msg">
+            <span>{errorMsg}</span>
+            <button
+              type="button"
+              className="btn-dismiss"
+              onClick={handleDismissFeedback}
+              aria-label="Dismiss"
+              data-testid="dismiss-error-btn"
+            >
+              &times;
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -84,6 +84,31 @@
   background: #dc2626;
 }
 
+.btn-cancel {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #cbd5e1;
+}
+
+.btn-icon {
+  padding: 0.35rem 0.5rem;
+  font-size: 1rem;
+  background: transparent;
+  color: #64748b;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
 .btn-max {
   padding: 0.65rem 1rem;
   font-size: 0.8rem;
@@ -261,6 +286,10 @@
   font-size: 0.85rem;
   font-weight: 500;
   animation: fadeIn 0.2s ease-out;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .feedback.success {
@@ -292,6 +321,77 @@
   gap: 0.5rem;
   color: #64748b;
   font-size: 0.95rem;
+}
+
+/* Not installed state */
+.not-installed {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.not-installed__icon {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem;
+  color: #94a3b8;
+}
+
+.not-installed__text {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.not-installed__hint {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.not-installed__hint a {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
+/* Confirm overlay */
+.confirm-overlay {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.confirm-text {
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin: 0 0 1rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Dismiss button */
+.btn-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.5;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btn-dismiss:hover {
+  opacity: 1;
 }
 
 /* Error state */

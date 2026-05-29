@@ -87,6 +87,25 @@ describe('ClaimBurn — wallet states', () => {
     expect(screen.getByTestId('wallet-info')).toBeInTheDocument();
     expect(screen.getByText(/GABC/)).toBeInTheDocument();
   });
+
+  it('shows error state with retry button', () => {
+    render(<ClaimBurn walletState="error" onConnect={vi.fn()} />);
+    expect(screen.getByTestId('wallet-error')).toBeInTheDocument();
+    expect(screen.getByText(/Connection Error/i)).toBeInTheDocument();
+    expect(screen.getByTestId('retry-connect-btn')).toBeInTheDocument();
+  });
+
+  it('shows balance when walletState object has balance', () => {
+    render(
+      <ClaimBurn
+        walletState={{ status: 'connected', balance: '500.75' }}
+        publicKey="GA4QZ3R2X3Y6KZ7J8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1"
+        onRefreshBalance={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('wallet-balance')).toHaveTextContent('500.75 XLM');
+    expect(screen.getByTestId('refresh-balance-btn')).toBeInTheDocument();
+  });
 });
 
 // ─── Toggle ─────────────────────────────────────────────────────────
@@ -113,6 +132,23 @@ describe('ClaimBurn — toggle', () => {
     fireEvent.click(screen.getByTestId('toggle-claim'));
     expect(screen.getByTestId('toggle-claim')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('submit-btn')).toHaveTextContent('Claim');
+  });
+
+  it('shows Max button in burn mode when balance is available', () => {
+    render(
+      <ClaimBurn
+        walletState={{ status: 'connected', balance: '1000' }}
+      />,
+    );
+    expect(screen.queryByTestId('max-btn')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('toggle-burn'));
+    expect(screen.getByTestId('max-btn')).toBeInTheDocument();
+  });
+
+  it('hides Max button when balance is null', () => {
+    render(<ClaimBurn walletState={{ status: 'connected', balance: null }} />);
+    fireEvent.click(screen.getByTestId('toggle-burn'));
+    expect(screen.queryByTestId('max-btn')).not.toBeInTheDocument();
   });
 });
 
@@ -208,5 +244,16 @@ describe('ClaimBurn — submit', () => {
     render(<ClaimBurn walletState="connected" />);
     fireEvent.change(screen.getByTestId('amount-input'), { target: { value: '0' } });
     expect(screen.getByTestId('submit-btn')).toBeDisabled();
+  });
+
+  it('shows disconnect button when onDisconnect is provided', () => {
+    render(
+      <ClaimBurn
+        walletState="connected"
+        publicKey="GABCDEF1234567890XYZ"
+        onDisconnect={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('disconnect-btn')).toBeInTheDocument();
   });
 });

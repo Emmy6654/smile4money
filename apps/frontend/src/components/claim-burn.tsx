@@ -221,18 +221,36 @@ export function ClaimBurn({
 
         {publicKey && (
           <div className="wallet-info" data-testid="wallet-info">
-            <span className="wallet-info-label">Connected</span>
-            <span className="wallet-info-address">
-              {publicKey.slice(0, 4)}&hellip;{publicKey.slice(-4)}
-            </span>
-            {onDisconnect && (
-              <button
-                className="btn-disconnect"
-                onClick={onDisconnect}
-                data-testid="disconnect-btn"
-              >
-                Disconnect
-              </button>
+            <div className="wallet-info-row">
+              <span className="wallet-info-label">Connected</span>
+              <span className="wallet-info-address">
+                {publicKey.slice(0, 4)}&hellip;{publicKey.slice(-4)}
+              </span>
+              {onDisconnect && (
+                <button
+                  className="btn-disconnect"
+                  onClick={onDisconnect}
+                  data-testid="disconnect-btn"
+                >
+                  Disconnect
+                </button>
+              )}
+            </div>
+            {balance !== null && onRefreshBalance && (
+              <div className="wallet-balance-row">
+                <span className="wallet-balance-label">Balance</span>
+                <span className="wallet-balance-value" data-testid="wallet-balance">
+                  {stripTrailingZeros(balance)} XLM
+                </span>
+                <button
+                  className="btn-refresh-balance"
+                  onClick={onRefreshBalance}
+                  data-testid="refresh-balance-btn"
+                  title="Refresh balance"
+                >
+                  {'\u21BB'}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -262,17 +280,30 @@ export function ClaimBurn({
             <label htmlFor="amount">
               {mode === 'claim' ? 'Claim amount' : 'Burn amount'} (XLM)
             </label>
-            <input
-              id="amount"
-              type="number"
-              min="0"
-              step="any"
-              value={amount}
-              onChange={handleAmountChange}
-              placeholder="0.00"
-              disabled={isPending}
-              data-testid="amount-input"
-            />
+            <div className="input-row">
+              <input
+                id="amount"
+                type="number"
+                min="0"
+                step="any"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="0.00"
+                disabled={isPending}
+                data-testid="amount-input"
+              />
+              {mode === 'burn' && balance !== null && (
+                <button
+                  type="button"
+                  className="btn-max"
+                  onClick={handleMax}
+                  disabled={isPending}
+                  data-testid="max-btn"
+                >
+                  Max
+                </button>
+              )}
+            </div>
             <button
               type="submit"
               className={`btn btn-${mode}`}
@@ -286,9 +317,14 @@ export function ClaimBurn({
 
         <div aria-live="polite" aria-atomic="true">
           {phase === 'success' && (
-            <p className="feedback success" role="status" data-testid="success-msg">
-              {mode === 'claim' ? 'Claimed successfully!' : 'Burned successfully!'}
-            </p>
+            <div className="feedback success" role="status" data-testid="success-msg">
+              <p>{mode === 'claim' ? 'Claimed successfully!' : 'Burned successfully!'}</p>
+              {txHash && (
+                <p className="tx-hash" data-testid="tx-hash">
+                  TX: {txHash.slice(0, 8)}&hellip;{txHash.slice(-6)}
+                </p>
+              )}
+            </div>
           )}
           {phase === 'error' && (
             <p className="feedback error" role="alert" data-testid="error-msg">

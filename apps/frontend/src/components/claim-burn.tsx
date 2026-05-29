@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import '../styles/claim-burn.css';
 
 type Mode = 'claim' | 'burn';
@@ -18,16 +19,110 @@ interface ClaimBurnProps {
   expectedNetwork?: string;
 }
 
-function isValidAmount(amount: string): boolean {
-  if (amount === '') return false;
-  const n = Number(amount);
-  return !isNaN(n) && n >= 0;
-}
-
-function stripTrailingZeros(value: string): string {
-  const n = parseFloat(value);
-  return isNaN(n) ? value : String(n);
-}
+const styles = {
+  panel: {
+    width: '100%',
+    maxWidth: 420,
+    minWidth: 0,
+    margin: '0 auto',
+    padding: 24,
+    borderRadius: 24,
+    background: '#ffffff',
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.08)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 18,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    boxSizing: 'border-box' as const,
+  },
+  walletPrompt: {
+    margin: 0,
+    fontSize: 16,
+    lineHeight: 1.5,
+    color: '#0f172a',
+  },
+  walletStatusRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    padding: '8px 14px',
+    background: '#ecfdf5',
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: 600,
+  },
+  button: {
+    width: '100%',
+    borderRadius: 14,
+    border: 'none',
+    padding: '14px 18px',
+    fontSize: 16,
+    cursor: 'pointer',
+    transition: 'background 0.2s ease, transform 0.15s ease',
+  },
+  connectButton: {
+    background: '#0f172a',
+    color: '#ffffff',
+  },
+  actionButton: {
+    background: '#0f172a',
+    color: '#ffffff',
+  },
+  toggleGroup: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 8,
+  },
+  toggleButton: {
+    borderRadius: 14,
+    padding: '12px 0',
+    border: '1px solid #e2e8f0',
+    background: '#f8fafc',
+    color: '#334155',
+    cursor: 'pointer',
+    fontSize: 15,
+  },
+  toggleActive: {
+    background: '#0f172a',
+    color: '#ffffff',
+    border: '1px solid #0f172a',
+  },
+  fieldset: {
+    display: 'grid',
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    color: '#475569',
+  },
+  input: {
+    width: '100%',
+    borderRadius: 16,
+    border: '1px solid #cbd5e1',
+    padding: '14px 16px',
+    fontSize: 16,
+    color: '#0f172a',
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  },
+  feedback: {
+    fontSize: 14,
+    margin: 0,
+  },
+  successText: {
+    color: '#16a34a',
+  },
+  errorText: {
+    color: '#dc2626',
+  },
+};
 
 export function ClaimBurn({
   walletState,

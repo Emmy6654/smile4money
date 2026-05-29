@@ -185,6 +185,44 @@ input:disabled {
   color: #9ca3af;
 }
 
+.amount-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-max {
+  background: #f3f4f6;
+  color: #111827;
+  width: 5.5rem;
+  min-width: 5.5rem;
+}
+
+.helper-text {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+.confirm-overlay {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.confirm-text {
+  margin: 0 0 1rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 /* Feedback */
 .feedback {
   margin: 0.75rem 0 0;

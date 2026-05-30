@@ -9,51 +9,80 @@
   font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
-.claim-burn .title {
-  margin: 0 0 16px 0;
+.claim-burn-title {
+  margin: 0 0 20px 0;
   font-size: 20px;
   font-weight: 600;
   color: #0f172a;
 }
 
-.claim-burn .wallet-prompt,
-.claim-burn .wallet-connecting {
+/* Wallet States */
+.wallet-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.wallet-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.wallet-state-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.wallet-state-message {
   margin: 0 0 16px 0;
   font-size: 14px;
   color: #64748b;
+  line-height: 1.5;
 }
 
-.claim-burn .wallet-connecting {
-  animation: pulse 1.5s ease-in-out infinite;
+.wallet-state-message a {
+  color: #6c63ff;
+  text-decoration: none;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.wallet-state-message a:hover {
+  text-decoration: underline;
 }
 
-.claim-burn .wallet-info {
-  padding: 12px;
-  margin: 12px 0;
-  background: #f1f5f9;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #475569;
+/* Spinner */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6c63ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
 }
 
-.claim-burn .wallet-info p {
-  margin: 4px 0;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.claim-burn .toggle {
+/* Toggle */
+.toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin: 12px 0;
+  margin: 16px 0;
 }
 
-.claim-burn .toggle-btn {
-  padding: 10px;
+.toggle-btn {
+  padding: 10px 16px;
   border: 1px solid #cbd5e1;
   background: #f8fafc;
   color: #475569;
@@ -64,56 +93,119 @@
   transition: all 0.2s;
 }
 
-.claim-burn .toggle-btn:hover {
+.toggle-btn:hover {
   background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
-.claim-burn .toggle-btn.active {
-  background: #0f172a;
+.toggle-btn.active {
+  background: #6c63ff;
   color: #ffffff;
-  border-color: #0f172a;
+  border-color: #6c63ff;
 }
 
+/* Wallet Info */
+.wallet-info {
+  padding: 12px 16px;
+  margin: 16px 0;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.wallet-info-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.wallet-info-address {
+  display: block;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+}
+
+/* Confirmation Overlay */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.confirm-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+
+.confirm-text {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #0f172a;
+  text-align: center;
+}
+
+.confirm-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Form */
 .claim-burn form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 16px 0;
+  gap: 16px;
 }
 
-.claim-burn label {
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
   font-size: 13px;
   font-weight: 500;
   color: #475569;
 }
 
-.claim-burn .input-wrapper {
-  display: flex;
-  gap: 8px;
-}
-
-.claim-burn input[type="number"] {
-  flex: 1;
+.form-group input {
   padding: 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 14px;
   color: #0f172a;
   outline: none;
+  transition: all 0.2s;
 }
 
-.claim-burn input[type="number"]:focus {
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+.form-group input:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
 }
 
-.claim-burn input:disabled {
+.form-group input:disabled {
   background: #f8fafc;
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.claim-burn .btn {
+/* Buttons */
+.btn {
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
@@ -123,119 +215,102 @@
   transition: all 0.2s;
 }
 
-.claim-burn .btn:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.claim-burn .btn-connect {
+.btn-connect,
+.btn-switch-network {
   width: 100%;
-  background: #0f172a;
+  background: #6c63ff;
   color: #ffffff;
 }
 
-.claim-burn .btn-connect:hover:not(:disabled) {
-  background: #1e293b;
+.btn-connect:hover:not(:disabled),
+.btn-switch-network:hover:not(:disabled) {
+  background: #5a52d5;
 }
 
-.claim-burn .btn-claim,
-.claim-burn .btn-burn {
+.btn-claim {
   width: 100%;
-  background: #0f172a;
+  background: #10b981;
   color: #ffffff;
 }
 
-.claim-burn .btn-claim:hover:not(:disabled),
-.claim-burn .btn-burn:hover:not(:disabled) {
-  background: #1e293b;
+.btn-claim:hover:not(:disabled) {
+  background: #059669;
 }
 
-.claim-burn .btn-max {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.claim-burn .btn-max:hover:not(:disabled) {
-  background: #cbd5e1;
-}
-
-.claim-burn .btn-disconnect,
-.claim-burn .btn-refresh {
+.btn-burn {
   width: 100%;
-  background: #f1f5f9;
-  color: #475569;
-  margin-top: 8px;
+  background: #ef4444;
+  color: #ffffff;
 }
 
-.claim-burn .btn-disconnect:hover,
-.claim-burn .btn-refresh:hover {
-  background: #e2e8f0;
+.btn-burn:hover:not(:disabled) {
+  background: #dc2626;
 }
 
-.claim-burn .message {
-  padding: 12px;
+.btn-cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+/* Feedback Messages */
+.feedback {
+  padding: 12px 16px;
   border-radius: 8px;
   font-size: 13px;
-  margin: 12px 0;
+  margin: 0;
 }
 
-.claim-burn .message-success {
+.feedback.success {
   background: #dcfce7;
   color: #166534;
   border: 1px solid #bbf7d0;
 }
 
-.claim-burn .message-error {
+.feedback.error {
   background: #fee2e2;
   color: #991b1b;
   border: 1px solid #fecaca;
 }
 
+.tx-hash {
+  margin-top: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  word-break: break-all;
+  opacity: 0.8;
+}
+
+/* Responsive */
 @media (max-width: 480px) {
   .claim-burn {
     padding: 16px;
     border-radius: 8px;
   }
 
-  .claim-burn .title {
+  .claim-burn-title {
     font-size: 18px;
   }
 
-  .claim-burn form {
-    gap: 10px;
+  .toggle {
+    gap: 6px;
   }
-}
 
-.btn-claim {
-  background: #16a34a;
-  color: #fff;
-}
+  .toggle-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 
-.btn-burn {
-  background: #dc2626;
-  color: #fff;
-}
-
-.feedback {
-  margin: 0;
-  font-size: 0.875rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-}
-
-.feedback.success {
-  background: #14532d;
-  color: #86efac;
-}
-
-.feedback.error {
-  background: #450a0a;
-  color: #fca5a5;
-}
-
-@media (max-width: 480px) {
-  .claim-burn {
-    padding: 1rem;
-    border-radius: 8px;
+  .btn {
+    padding: 8px 12px;
+    font-size: 13px;
   }
 }

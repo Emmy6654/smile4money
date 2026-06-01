@@ -5,6 +5,13 @@ type Mode = 'claim' | 'burn';
 type Status = 'idle' | 'confirm' | 'pending' | 'success' | 'error';
 type Theme = 'light' | 'dark' | 'system';
 
+interface TxRecord {
+  mode: Mode;
+  amount: string;
+  hash: string | null;
+  timestamp: number;
+}
+
 interface ClaimBurnProps {
   walletState: string;
   onConnect?: () => void;
@@ -106,7 +113,12 @@ export function ClaimBurn({
     try {
       const action = mode === 'claim' ? onClaim : onBurn;
       const hash = await action?.(amount);
-      if (hash) setTxHash(hash);
+      const resolvedHash = hash ?? null;
+      if (resolvedHash) setTxHash(resolvedHash);
+      setTxHistory(prev => [
+        { mode, amount, hash: resolvedHash, timestamp: Date.now() },
+        ...prev.slice(0, 4),
+      ]);
       setStatus('success');
       setAmount('');
     } catch (err) {
@@ -364,6 +376,33 @@ export function ClaimBurn({
         <p className="feedback error" role="alert" data-testid="error-msg">
           {errorMsg}
         </p>
+      )}
+
+      {/* Transaction History */}
+      {txHistory.length > 0 && (
+        <div className="tx-history" data-testid="tx-history">
+          <button
+            type="button"
+            className="tx-history-toggle"
+            onClick={() => setShowHistory(v => !v)}
+            aria-expanded={showHistory}
+          >
+            Recent Transactions ({txHistory.length})
+          </button>
+          {showHistory && (
+            <ul className="tx-history-list">
+              {txHistory.map((tx, i) => (
+                <li key={i} className="tx-history-item">
+                  <span className={`tx-badge tx-badge-${tx.mode}`}>{tx.mode}</span>
+                  <span className="tx-amount">{tx.amount} XLM</span>
+                  <span className="tx-time">
+                    {new Date(tx.timestamp).toLocaleTimeString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

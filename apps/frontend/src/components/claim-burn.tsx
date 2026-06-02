@@ -1,18 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../styles/claim-burn.css';
 
 type Mode = 'claim' | 'burn';
 type Status = 'idle' | 'confirm' | 'pending' | 'success' | 'error';
-type Theme = 'light' | 'dark' | 'system';
 
-interface TxRecord {
-  mode: Mode;
-  amount: string;
-  hash: string | null;
-  timestamp: number;
-}
-
-interface ClaimBurnProps {
+export interface ClaimBurnProps {
   walletState: string;
   onConnect?: () => void;
   onClaim?: (amount: string) => Promise<string | void>;
@@ -23,71 +15,15 @@ interface ClaimBurnProps {
   publicKey?: string | null;
   balance?: string | null;
   expectedNetwork?: string;
-  theme?: Theme;
 }
 
-function StatusBadge({ walletState }: { walletState: WalletState }) {
-  const config: Record<WalletState, { label: string; color: string; dot: string }> = {
-    disconnected: { label: "Wallet Disconnected", color: "text-white/40",    dot: "bg-white/20" },
-    connecting:   { label: "Connecting…",          color: "text-amber-400",   dot: "bg-amber-400 animate-pulse" },
-    connected:    { label: "Wallet Connected",      color: "text-emerald-400", dot: "bg-emerald-400" },
-    processing:   { label: "Processing…",           color: "text-sky-400",    dot: "bg-sky-400 animate-pulse" },
-  };
-  const { label, color, dot } = config[walletState];
-  return (
-    <div className={`flex items-center gap-2 text-xs font-medium ${color}`} aria-live="polite">
-      <span className={`w-2 h-2 rounded-full ${dot}`} aria-hidden="true" />
-      {label}
-    </div>
-  );
+function isValidAmount(value: string): boolean {
+  const n = Number(value);
+  return value.trim() !== '' && !isNaN(n) && n > 0;
 }
 
-function useCopyToClipboard(timeoutMs = 2000) {
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const copy = useCallback(async (text: string, key: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), timeoutMs);
-    } catch {
-      // clipboard not available
-    }
-  }, [timeoutMs]);
-
-  return { copiedKey, copy };
-}
-
-function resolveState(walletState: WalletState): string {
-  if (typeof walletState === 'string') return walletState;
-  return walletState.status;
-}
-
-function hasConfirmStep(walletState: WalletState): boolean {
-  return typeof walletState === 'object';
-}
-
-function StatusBadge({ walletState }: { walletState: WalletState }) {
-  const config: Record<WalletState, { label: string; color: string; dot: string }> = {
-    disconnected: { label: "Wallet Disconnected", color: "text-white/40",    dot: "bg-white/20" },
-    connecting:   { label: "Connecting…",          color: "text-amber-400",   dot: "bg-amber-400 animate-pulse" },
-    connected:    { label: "Wallet Connected",      color: "text-emerald-400", dot: "bg-emerald-400" },
-    processing:   { label: "Processing…",           color: "text-sky-400",    dot: "bg-sky-400 animate-pulse" },
-  };
-  const { label, color, dot } = config[walletState];
-  return (
-    <div className={`flex items-center gap-2 text-xs font-medium ${color}`} aria-live="polite">
-      <span className={`w-2 h-2 rounded-full ${dot}`} aria-hidden="true" />
-      {label}
-    </div>
-  );
-}
-
-export default function ClaimBurn({
-  walletState: externalWalletState,
-  claimableAmount = "1,250.00",
-  burnableAmount  = "450.00",
-  tokenSymbol     = "S4M",
+export function ClaimBurn({
+  walletState,
   onConnect,
   onClaim,
   onBurn,
@@ -97,31 +33,25 @@ export default function ClaimBurn({
   publicKey,
   balance,
   expectedNetwork = 'testnet',
-  theme = 'system',
 }: ClaimBurnProps) {
-  const resolvedTheme = useResolvedTheme(theme);
   const [mode, setMode] = useState<Mode>('claim');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [txHash, setTxHash] = useState<string | null>(null);
-  const { copiedKey, copy } = useCopyToClipboard();
 
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  const confirmBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-dismiss success after 3s
   useEffect(() => {
     if (status === 'success') {
-      const msg = mode === 'claim' ? 'XLM claimed successfully!' : 'XLM burned successfully!';
-      setAnnouncement(msg);
-      const timer = setTimeout(() => {
-        setStatus('idle');
-        setAnnouncement('');
-      }, 3000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setStatus('idle'), 3000);
+      return () => clearTimeout(t);
     }
-    if (status === 'error') {
-      setAnnouncement(errorMsg || 'Transaction failed');
-    }
-  }, [status, mode, errorMsg]);
+  }, [status]);
 
+  // Focus confirm button when overlay appears
   useEffect(() => {
     if (status === 'confirm') {
       confirmBtnRef.current?.focus();
@@ -132,7 +62,6 @@ export default function ClaimBurn({
     setStatus('idle');
     setTxHash(null);
     setErrorMsg('');
-    setAnnouncement('');
   }
 
   function handleToggle(newMode: Mode) {
@@ -141,68 +70,59 @@ export default function ClaimBurn({
     setTimeout(() => amountInputRef.current?.focus(), 0);
   }
 
-  const effectiveState = externalWalletState ?? walletState;
+  function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setAmount(e.target.value);
+    if (status === 'error' || status === 'success') resetFeedback();
+  }
 
-  const handleConnect = useCallback(async () => {
-    setError(null);
-    setWalletState("connecting");
-    try {
-      if (onConnect) await onConnect();
-      else await new Promise((r) => setTimeout(r, 1200));
-      setWalletState("connected");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to connect wallet");
-      setWalletState("disconnected");
+  function handleMax() {
+    if (balance != null) {
+      setAmount(balance);
+      resetFeedback();
     }
-  }, [onConnect]);
+  }
 
-  const handleConnect = useCallback(async () => {
-    setError(null); setWState("connecting");
-    try { if (onConnect) await onConnect(); else await new Promise(r => setTimeout(r, 1200)); setWState("connected"); }
-    catch (e: any) { setError(e?.message ?? "Failed to connect"); setWState("disconnected"); }
-  }, [onConnect]);
+  function handleRequestSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!isValidAmount(amount)) return;
+    setStatus('confirm');
+  }
 
-  async function handleConfirm() {
+  const handleConfirm = useCallback(async () => {
     setStatus('pending');
     setErrorMsg('');
+    setTxHash(null);
     try {
       const action = mode === 'claim' ? onClaim : onBurn;
       const hash = await action?.(amount);
-      const resolvedHash = hash ?? null;
-      if (resolvedHash) setTxHash(resolvedHash);
-      setTxHistory(prev => [
-        { mode, amount, hash: resolvedHash, timestamp: Date.now() },
-        ...prev.slice(0, 4),
-      ]);
+      if (hash) setTxHash(hash);
       setStatus('success');
       setAmount('');
     } catch (err) {
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Transaction failed');
     }
-  }
+  }, [mode, onClaim, onBurn, amount]);
 
   function handleCancel() {
     setStatus('idle');
     setTimeout(() => amountInputRef.current?.focus(), 0);
   }
 
-  const themeClass = `theme-${resolvedTheme}`;
-
   // ── Wallet state screens ──────────────────────────────────────────
 
   if (walletState === 'checking' || walletState === 'connecting') {
     return (
-      <div className={`wallet-state ${themeClass}`} data-testid="wallet-connecting">
+      <div className="wallet-state" data-testid="wallet-connecting">
         <div className="spinner" />
-        <p className="wallet-state-message">Connecting to Freighter&hellip;</p>
+        <p className="wallet-state-message">Connecting to wallet&hellip;</p>
       </div>
     );
   }
 
   if (walletState === 'notInstalled') {
     return (
-      <div className={`wallet-state ${themeClass}`} data-testid="wallet-not-installed">
+      <div className="wallet-state" data-testid="wallet-not-installed">
         <span className="wallet-state-icon">⚠️</span>
         <h3 className="wallet-state-title">Freighter Not Found</h3>
         <p className="wallet-state-message">
@@ -213,16 +133,22 @@ export default function ClaimBurn({
           to continue.
         </p>
       </div>
+    );
+  }
 
   if (walletState === 'disconnected') {
     return (
-      <div className={`wallet-state ${themeClass}`} data-testid="wallet-disconnected">
+      <div className="wallet-state" data-testid="wallet-disconnected">
         <span className="wallet-state-icon">💼</span>
         <h3 className="wallet-state-title">Connect Your Wallet</h3>
         <p className="wallet-state-message">
           Connect your Freighter wallet to claim rewards or burn tokens.
         </p>
-        <button className="btn btn-connect" onClick={onConnect} data-testid="connect-wallet-btn">
+        <button
+          className="btn btn-connect"
+          onClick={onConnect}
+          data-testid="connect-wallet-btn"
+        >
           Connect Wallet
         </button>
       </div>
@@ -231,11 +157,12 @@ export default function ClaimBurn({
 
   if (walletState === 'wrongNetwork') {
     return (
-      <div className={`wallet-state ${themeClass}`} data-testid="wallet-wrong-network">
+      <div className="wallet-state" data-testid="wallet-wrong-network">
         <span className="wallet-state-icon">🌐</span>
         <h3 className="wallet-state-title">Wrong Network</h3>
         <p className="wallet-state-message">
-          Please switch your Freighter wallet to <strong>{expectedNetwork}</strong>.
+          Please switch your Freighter wallet to{' '}
+          <strong>{expectedNetwork}</strong>.
         </p>
         <button
           className="btn btn-switch-network"
@@ -250,69 +177,52 @@ export default function ClaimBurn({
 
   if (walletState === 'error') {
     return (
-      <div className={`wallet-state ${themeClass}`} data-testid="wallet-error">
+      <div className="wallet-state" data-testid="wallet-error">
         <span className="wallet-state-icon">⚠️</span>
         <h3 className="wallet-state-title">Connection Error</h3>
         <p className="wallet-state-message">
           An error occurred while connecting to your wallet.
         </p>
-        <button className="btn btn-connect" onClick={onConnect} data-testid="retry-connect-btn">
+        <button
+          className="btn btn-connect"
+          onClick={onConnect}
+          data-testid="retry-connect-btn"
+        >
           Try Again
         </button>
       </div>
+    );
+  }
 
-      {error && (
-        <div
-          role="alert"
-          aria-live="assertive"
-          className="rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-3 text-sm text-rose-400"
-        >
-          ⚠ {error}
-        </div>
-      )}
+  // ── Connected UI ──────────────────────────────────────────────────
+
+  const isPending = status === 'pending';
+  const showConfirm = status === 'confirm';
+  const valid = isValidAmount(amount);
 
   return (
-    <div className={`claim-burn ${themeClass}`} data-testid="claim-burn" data-theme={resolvedTheme}>
+    <div className="claim-burn" data-testid="claim-burn">
       <h2 className="claim-burn-title">Claim &amp; Burn</h2>
 
-      {isDisconnected ? (
+      {/* Mode toggle */}
+      <div className="toggle" role="group" aria-label="Select mode">
         <button
           type="button"
-          onClick={handleConnect}
-          disabled={effectiveState === "connecting"}
-          aria-label="Connect wallet to continue"
-          className={[
-            "w-full rounded-xl py-3.5 text-sm font-bold text-white transition-all duration-200",
-            "bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
-            effectiveState === "connecting" ? "opacity-70 cursor-not-allowed" : "",
-          ].join(" ")}
+          className={`toggle-btn${mode === 'claim' ? ' active' : ''}`}
+          onClick={() => handleToggle('claim')}
+          aria-pressed={mode === 'claim'}
+          data-testid="toggle-claim"
         >
-          <span className="flex items-center justify-center gap-2">
-            {effectiveState === "connecting" && <Spinner />}
-            {effectiveState === "connecting" ? "Connecting Wallet…" : "Connect Wallet"}
-          </span>
+          Claim
         </button>
-      ) : (
         <button
           type="button"
-          onClick={handleAction}
-          disabled={isProcessing}
-          aria-label={isClaim ? "Claim available rewards" : "Burn tokens"}
-          aria-busy={isProcessing}
-          className={[
-            "w-full rounded-xl py-3.5 text-sm font-bold text-white transition-all duration-200 shadow-lg",
-            actionColor,
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-            isProcessing ? "opacity-70 cursor-not-allowed" : "",
-          ].join(" ")}
+          className={`toggle-btn${mode === 'burn' ? ' active' : ''}`}
+          onClick={() => handleToggle('burn')}
+          aria-pressed={mode === 'burn'}
+          data-testid="toggle-burn"
         >
-          <span className="flex items-center justify-center gap-2">
-            {isProcessing && <Spinner />}
-            {isProcessing
-              ? isClaim ? "Claiming…" : "Burning…"
-              : isClaim ? "Claim Rewards" : "Burn Tokens"}
-          </span>
+          Burn
         </button>
       </div>
 
@@ -321,18 +231,15 @@ export default function ClaimBurn({
         <div className="wallet-info" data-testid="wallet-info">
           <div className="wallet-info-row">
             <span className="wallet-info-label">Connected</span>
-            <button
-              type="button"
-              className="wallet-info-address btn-copy"
-              onClick={() => copy(publicKey, 'address')}
-              title="Copy full address"
-              data-testid="copy-address-btn"
-            >
+            <span className="wallet-info-address">
               {publicKey.slice(0, 4)}&hellip;{publicKey.slice(-4)}
-              <span className="copy-indicator">{copiedKey === 'address' ? ' Copied!' : ' Copy'}</span>
-            </button>
+            </span>
             {onDisconnect && (
-              <button className="btn-disconnect" onClick={onDisconnect} data-testid="disconnect-btn">
+              <button
+                className="btn-disconnect"
+                onClick={onDisconnect}
+                data-testid="disconnect-btn"
+              >
                 Disconnect
               </button>
             )}
@@ -340,7 +247,11 @@ export default function ClaimBurn({
           {balance != null && (
             <div className="wallet-balance-row">
               <span className="wallet-balance-label">Balance</span>
-              <span className="wallet-balance-value" data-testid="wallet-balance" aria-label={`${balance} XLM`}>
+              <span
+                className="wallet-balance-value"
+                data-testid="wallet-balance"
+                aria-label={`${balance} XLM`}
+              >
                 {balance} XLM
               </span>
               {onRefreshBalance && (
@@ -368,7 +279,8 @@ export default function ClaimBurn({
           aria-label={`Confirm ${mode}`}
         >
           <p className="confirm-text">
-            {mode === 'claim' ? 'Claim' : 'Burn'} <strong>{amount}</strong> XLM?
+            {mode === 'claim' ? 'Claim' : 'Burn'}{' '}
+            <strong>{amount}</strong> XLM?
           </p>
           <div className="confirm-buttons">
             <button
@@ -392,8 +304,12 @@ export default function ClaimBurn({
         </div>
       )}
 
-      {/* Form */}
-      <form onSubmit={handleRequestSubmit} data-testid="claim-burn-form" aria-label={`${mode === 'claim' ? 'Claim' : 'Burn'} tokens`}>
+      {/* Amount form */}
+      <form
+        onSubmit={handleRequestSubmit}
+        data-testid="claim-burn-form"
+        aria-label={`${mode === 'claim' ? 'Claim' : 'Burn'} tokens`}
+      >
         <div className="form-group">
           <label htmlFor="amount-input">Amount (XLM)</label>
           <div className="input-row">
@@ -408,7 +324,6 @@ export default function ClaimBurn({
               disabled={isPending}
               placeholder="0.00"
               data-testid="amount-input"
-              aria-describedby={balance != null ? 'wallet-balance' : undefined}
               aria-invalid={amount !== '' && !valid}
             />
             {mode === 'burn' && balance != null && (
@@ -446,16 +361,9 @@ export default function ClaimBurn({
         <p className="feedback success" role="status" data-testid="success-msg">
           {mode === 'claim' ? 'XLM claimed successfully!' : 'XLM burned successfully!'}
           {txHash && (
-            <button
-              type="button"
-              className="tx-hash btn-copy"
-              onClick={() => copy(txHash, 'txhash')}
-              title="Copy transaction hash"
-              data-testid="copy-txhash-btn"
-            >
+            <span className="tx-hash" data-testid="tx-hash">
               {txHash.slice(0, 8)}&hellip;{txHash.slice(-8)}
-              <span className="copy-indicator">{copiedKey === 'txhash' ? ' Copied!' : ' Copy'}</span>
-            </button>
+            </span>
           )}
         </p>
       )}
@@ -464,35 +372,8 @@ export default function ClaimBurn({
           {errorMsg}
         </p>
       )}
-
-      {/* Transaction History */}
-      {txHistory.length > 0 && (
-        <div className="tx-history" data-testid="tx-history">
-          <button
-            type="button"
-            className="tx-history-toggle"
-            onClick={() => setShowHistory(v => !v)}
-            aria-expanded={showHistory}
-          >
-            Recent Transactions ({txHistory.length})
-          </button>
-          {showHistory && (
-            <ul className="tx-history-list">
-              {txHistory.map((tx, i) => (
-                <li key={i} className="tx-history-item">
-                  <span className={`tx-badge tx-badge-${tx.mode}`}>{tx.mode}</span>
-                  <span className="tx-amount">{tx.amount} XLM</span>
-                  <span className="tx-time">
-                    {new Date(tx.timestamp).toLocaleTimeString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-export { ClaimBurn };
+export default ClaimBurn;

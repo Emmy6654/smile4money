@@ -1071,12 +1071,12 @@ fn test_deposit_emits_event() {
         &String::from_str(&env, "deposit_ev"),
         &Platform::Lichess,
     );
-    
+
     // Test player1 deposit
     client.deposit(&id, &player1);
 
     client.deposit(&id, &player2);
-    
+
     let events = env.events().all();
     let deposit_topics = vec![
         &env,

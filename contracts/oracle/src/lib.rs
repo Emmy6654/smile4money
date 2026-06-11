@@ -183,7 +183,7 @@ mod tests {
         client.initialize(&admin);
 
         use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
-        env.set_auths(&[MockAuth {
+        env.mock_auths(&[MockAuth {
             address: &non_admin,
             invoke: &MockAuthInvoke {
                 contract: &contract_id,
@@ -196,8 +196,7 @@ mod tests {
                     .into_val(&env),
                 sub_invokes: &[],
             },
-        }
-        .into()]);
+        }]);
 
         assert!(client
             .try_submit_result(
@@ -281,7 +280,7 @@ mod tests {
         client.initialize(&admin);
 
         use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
-        env.set_auths(&[MockAuth {
+        env.mock_auths(&[MockAuth {
             address: &non_admin,
             invoke: &MockAuthInvoke {
                 contract: &contract_id,
@@ -289,8 +288,7 @@ mod tests {
                 args: (new_admin.clone(),).into_val(&env),
                 sub_invokes: &[],
             },
-        }
-        .into()]);
+        }]);
 
         assert!(client.try_transfer_admin(&new_admin).is_err());
     }

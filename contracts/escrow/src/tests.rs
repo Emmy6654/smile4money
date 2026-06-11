@@ -274,7 +274,7 @@ fn test_cancel_with_both_deposits_requires_both_auth() {
     client.deposit(&id, &player2);
 
     // Now set auth to only player1 — should panic because player2's auth is also required
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &player1,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -282,8 +282,7 @@ fn test_cancel_with_both_deposits_requires_both_auth() {
             args: (id, player1.clone()).into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
 
     client.cancel_match(&id, &player1);
 }
@@ -436,7 +435,7 @@ fn test_submit_result_random_caller_is_unauthorized() {
     let game_id = String::from_str(&env, "random_caller");
 
     // Provide auth for the random address — the contract must still reject it.
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &random,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -444,8 +443,7 @@ fn test_submit_result_random_caller_is_unauthorized() {
             args: (id, game_id.clone(), Winner::Player1, random.clone()).into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
 
     assert_eq!(
         client.try_submit_result(&id, &game_id, &Winner::Player1, &random),
@@ -889,7 +887,7 @@ fn test_non_admin_cannot_pause() {
     let non_admin = Address::generate(&env);
 
     use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &non_admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -897,8 +895,7 @@ fn test_non_admin_cannot_pause() {
             args: ().into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
 
     assert!(client.try_pause().is_err());
 }
@@ -912,7 +909,7 @@ fn test_non_admin_cannot_unpause() {
     client.pause();
 
     use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &non_admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -920,8 +917,7 @@ fn test_non_admin_cannot_unpause() {
             args: ().into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
 
     assert!(client.try_unpause().is_err());
 }
@@ -976,7 +972,7 @@ fn test_non_admin_cannot_update_oracle() {
     client.initialize(&oracle, &admin, &token_addr);
 
     use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &non_admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -984,8 +980,7 @@ fn test_non_admin_cannot_update_oracle() {
             args: (new_oracle.clone(),).into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
 
     assert!(client.try_update_oracle(&new_oracle).is_err());
 }
@@ -1246,7 +1241,7 @@ fn test_non_admin_cannot_call_admin_functions() {
 
     use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
 
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &non_admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -1254,11 +1249,10 @@ fn test_non_admin_cannot_call_admin_functions() {
             args: ().into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
     assert!(client.try_pause().is_err());
 
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &non_admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -1266,11 +1260,10 @@ fn test_non_admin_cannot_call_admin_functions() {
             args: ().into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
     assert!(client.try_unpause().is_err());
 
-    env.set_auths(&[MockAuth {
+    env.mock_auths(&[MockAuth {
         address: &non_admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
@@ -1278,8 +1271,7 @@ fn test_non_admin_cannot_call_admin_functions() {
             args: (new_oracle.clone(),).into_val(&env),
             sub_invokes: &[],
         },
-    }
-    .into()]);
+    }]);
     assert!(client.try_update_oracle(&new_oracle).is_err());
 }
 

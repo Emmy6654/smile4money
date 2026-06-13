@@ -326,16 +326,12 @@ impl EscrowContract {
         };
 
         match winner {
-            Winner::Player1 => client.transfer(
-                &env.current_contract_address(),
-                &m.player1,
-                &payout_amount,
-            ),
-            Winner::Player2 => client.transfer(
-                &env.current_contract_address(),
-                &m.player2,
-                &payout_amount,
-            ),
+            Winner::Player1 => {
+                client.transfer(&env.current_contract_address(), &m.player1, &payout_amount)
+            }
+            Winner::Player2 => {
+                client.transfer(&env.current_contract_address(), &m.player2, &payout_amount)
+            }
             Winner::Draw => {
                 client.transfer(&env.current_contract_address(), &m.player1, &payout_amount);
                 client.transfer(&env.current_contract_address(), &m.player2, &payout_amount);
@@ -356,7 +352,8 @@ impl EscrowContract {
         );
 
         let topics = (Symbol::new(&env, "match"), symbol_short!("completed"));
-        env.events().publish(topics, (match_id, winner, payout_amount));
+        env.events()
+            .publish(topics, (match_id, winner, payout_amount));
 
         Ok(())
     }

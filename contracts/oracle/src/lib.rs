@@ -352,8 +352,7 @@ mod tests {
 
             assert!(
                 matched.is_some(),
-                "No result event emitted for variant {:?}",
-                expected_result
+                "No result event emitted for variant {expected_result:?}",
             );
 
             let (_, _, actual_data) = matched.unwrap();
@@ -361,18 +360,15 @@ mod tests {
                 soroban_sdk::TryFromVal::try_from_val(&env, &actual_data).unwrap();
             assert_eq!(
                 ev_match_id, *match_id,
-                "match_id mismatch for variant {:?}",
-                expected_result
+                "match_id mismatch for variant {expected_result:?}",
             );
             assert_eq!(
                 &ev_result, expected_result,
-                "result mismatch for variant {:?}",
-                expected_result
+                "result mismatch for variant {expected_result:?}",
             );
             assert_eq!(
                 ev_timestamp, timestamp,
-                "timestamp mismatch for variant {:?}",
-                expected_result
+                "timestamp mismatch for variant {expected_result:?}",
             );
         }
     }

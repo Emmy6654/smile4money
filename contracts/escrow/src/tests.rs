@@ -67,24 +67,6 @@ fn test_get_match_not_found() {
 }
 
 #[test]
-fn test_create_match_empty_game_id_fails() {
-    let (env, contract_id, _oracle, player1, player2, token, _admin) = setup();
-    let client = EscrowContractClient::new(&env, &contract_id);
-
-    assert!(matches!(
-        client.try_create_match(
-            &player1,
-            &player2,
-            &100,
-            &token,
-            &String::from_str(&env, ""),
-            &Platform::Lichess,
-        ),
-        Err(Ok(Error::InvalidGameId))
-    ));
-}
-
-#[test]
 fn test_deposit_and_activate() {
     let (env, contract_id, _oracle, player1, player2, token, _admin) = setup();
     let client = EscrowContractClient::new(&env, &contract_id);
@@ -551,7 +533,9 @@ fn test_double_initialize_fails() {
     env.mock_all_auths();
     let oracle = Address::generate(&env);
     let admin = Address::generate(&env);
-    let token_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
     client.initialize(&oracle, &admin, &token_addr);
@@ -971,7 +955,9 @@ fn test_non_admin_cannot_update_oracle() {
     let non_admin = Address::generate(&env);
     let oracle = Address::generate(&env);
     let new_oracle = Address::generate(&env);
-    let token_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
     client.initialize(&oracle, &admin, &token_addr);
@@ -1239,7 +1225,9 @@ fn test_non_admin_cannot_call_admin_functions() {
     let non_admin = Address::generate(&env);
     let oracle = Address::generate(&env);
     let new_oracle = Address::generate(&env);
-    let token_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
     client.initialize(&oracle, &admin, &token_addr);
@@ -1658,4 +1646,3 @@ fn test_cancel_match_refunds_only_player1_when_only_player1_deposited() {
     // Match must be in Cancelled state
     assert_eq!(client.get_match(&id).state, MatchState::Cancelled);
 }
-

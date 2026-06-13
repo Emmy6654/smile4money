@@ -48,7 +48,15 @@ fn setup_e2e() -> (Env, Address, Address, Address, Address, Address, Address) {
     let client = EscrowContractClient::new(&env, &contract_id);
     client.initialize(&oracle, &admin, &token_addr);
 
-    (env, contract_id, oracle, player1, player2, token_addr, admin)
+    (
+        env,
+        contract_id,
+        oracle,
+        player1,
+        player2,
+        token_addr,
+        admin,
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -646,7 +654,9 @@ fn test_e2e_event_sequence_full_lifecycle() {
         soroban_sdk::symbol_short!("deposit").into_val(&env),
     ];
     assert!(
-        events_after_p1_deposit.iter().any(|(_, t, _)| t == deposit_topics),
+        events_after_p1_deposit
+            .iter()
+            .any(|(_, t, _)| t == deposit_topics),
         "expected (match, deposit) event after player1 deposit"
     );
 

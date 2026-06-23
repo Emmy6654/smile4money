@@ -86,4 +86,7 @@ pub enum Error {
 
     /// [E017] Deposit rejected because the match has already completed.
     MatchCompleted = 17,
+
+    /// [E018] emergency_drain requires the contract to be paused first.
+    NotPaused = 18,
 }

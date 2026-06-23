@@ -1649,3 +1649,73 @@ fn test_cancel_match_refunds_only_player1_when_only_player1_deposited() {
     // Match must be in Cancelled state
     assert_eq!(client.get_match(&id).state, MatchState::Cancelled);
 }
+
+// Issue #912: emergency_drain — success, unpaused guard, non-admin guard
+
+#[test]
+fn test_emergency_drain_succeeds_when_paused() {
+    let (env, contract_id, _oracle, player1, player2, token, admin) = setup();
+    let client = EscrowContractClient::new(&env, &contract_id);
+    let token_client = TokenClient::new(&env, &token);
+
+    // Fund the escrow with two deposits
+    let id = client.create_match(
+        &player1,
+        &player2,
+        &100,
+        &token,
+        &String::from_str(&env, "drain_test"),
+        &Platform::Lichess,
+    );
+    client.deposit(&id, &player1);
+    client.deposit(&id, &player2);
+    assert_eq!(token_client.balance(&contract_id), 200);
+
+    client.pause();
+
+    let safe = Address::generate(&env);
+    client.emergency_drain(&safe, &admin);
+
+    assert_eq!(token_client.balance(&contract_id), 0);
+    assert_eq!(token_client.balance(&safe), 200);
+
+    // Verify event
+    let events = env.events().all();
+    let drain_topics = vec![
+        &env,
+        Symbol::new(&env, "admin").into_val(&env),
+        symbol_short!("drain").into_val(&env),
+    ];
+    let matched = events.iter().find(|(_, t, _)| *t == drain_topics);
+    assert!(matched.is_some());
+    let (_, _, data) = matched.unwrap();
+    let (ev_amount, ev_to, ev_admin): (i128, Address, Address) =
+        TryFromVal::try_from_val(&env, &data).unwrap();
+    assert_eq!(ev_amount, 200);
+    assert_eq!(ev_to, safe);
+    assert_eq!(ev_admin, admin);
+}
+
+#[test]
+fn test_emergency_drain_fails_when_not_paused() {
+    let (env, contract_id, _oracle, _player1, _player2, _token, admin) = setup();
+    let client = EscrowContractClient::new(&env, &contract_id);
+    let safe = Address::generate(&env);
+    assert_eq!(
+        client.try_emergency_drain(&safe, &admin),
+        Err(Ok(Error::NotPaused))
+    );
+}
+
+#[test]
+fn test_emergency_drain_fails_for_non_admin() {
+    let (env, contract_id, _oracle, _player1, _player2, _token, _admin) = setup();
+    let client = EscrowContractClient::new(&env, &contract_id);
+    client.pause();
+    let non_admin = Address::generate(&env);
+    let safe = Address::generate(&env);
+    assert_eq!(
+        client.try_emergency_drain(&safe, &non_admin),
+        Err(Ok(Error::Unauthorized))
+    );
+}

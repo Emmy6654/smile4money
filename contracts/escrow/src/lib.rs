@@ -423,6 +423,54 @@ impl EscrowContract {
         Ok(())
     }
 
+    /// Drain all token holdings to a safe address — admin only, requires contract to be paused.
+    ///
+    /// This is an emergency recovery function for critical exploit scenarios. It transfers
+    /// the entire contract token balance to `to` and emits an `admin:emergency_drain` event.
+    ///
+    /// # Future enhancements
+    /// - **Time-lock**: require a delay (e.g., 24 h) between `pause()` and `emergency_drain()`
+    ///   so players can challenge a malicious admin action.
+    /// - **Multi-sig**: require M-of-N admin signatures to prevent a single compromised key
+    ///   from draining funds.
+    pub fn emergency_drain(env: Env, to: Address, caller: Address) -> Result<(), Error> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::Unauthorized)?;
+
+        if caller != admin {
+            return Err(Error::Unauthorized);
+        }
+        caller.require_auth();
+
+        if !Self::is_paused(&env) {
+            return Err(Error::NotPaused);
+        }
+
+        let token: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Token)
+            .ok_or(Error::Unauthorized)?;
+
+        let client = token::Client::new(&env, &token);
+        let contract = env.current_contract_address();
+        let balance = client.balance(&contract);
+
+        if balance > 0 {
+            client.transfer(&contract, &to, &balance);
+        }
+
+        env.events().publish(
+            (Symbol::new(&env, "admin"), symbol_short!("drain")),
+            (balance, to, admin),
+        );
+
+        Ok(())
+    }
+
     /// Read a match by ID.
     pub fn get_match(env: Env, match_id: u64) -> Result<Match, Error> {
         env.storage()

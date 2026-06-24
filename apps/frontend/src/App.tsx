@@ -1,4 +1,5 @@
 import { ClaimBurn } from './components/claim-burn';
+import { NetworkBadge } from './components/NetworkBadge';
 import { useStellarWallet } from './hooks/useStellarWallet';
 import type { WalletStatus } from './types';
 
@@ -23,6 +24,9 @@ export function App() {
 
   return (
     <main className="bg-gray-100" style={{ padding: '2rem', minHeight: '100vh' }}>
+      <div className="mb-4">
+        <NetworkBadge />
+      </div>
       <ClaimBurn
         walletState={walletState}
         onConnect={connect}

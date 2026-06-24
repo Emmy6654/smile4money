@@ -22,7 +22,7 @@ export function App() {
   };
 
   return (
-    <main style={{ padding: '2rem', minHeight: '100vh', background: '#f5f5f5' }}>
+    <main className="bg-gray-100" style={{ padding: '2rem', minHeight: '100vh' }}>
       <ClaimBurn
         walletState={walletState}
         onConnect={connect}

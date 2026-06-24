@@ -48,6 +48,12 @@ fn setup_e2e() -> (Env, Address, Address, Address, Address, Address, Address) {
     let client = EscrowContractClient::new(&env, &contract_id);
     client.initialize(&oracle, &admin, &token_addr);
 
+    // Approve the escrow contract for both players (needed for allowance check)
+    let expiration = env.ledger().sequence() + 1000000;
+    let token_client = TokenClient::new(&env, &token_addr);
+    token_client.approve(&player1, &contract_id, &1_000, &expiration);
+    token_client.approve(&player2, &contract_id, &1_000, &expiration);
+
     (
         env,
         contract_id,

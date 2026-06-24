@@ -25,6 +25,20 @@ impl EscrowContract {
             .unwrap_or(false)
     }
 
+    fn get_match_count(env: &Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&DataKey::MatchCount)
+            .unwrap_or(0)
+    }
+
+    fn validate_match_id(env: &Env, match_id: u64) -> Result<(), Error> {
+        if match_id >= Self::get_match_count(env) {
+            return Err(Error::MatchNotFound);
+        }
+        Ok(())
+    }
+
     /// Initialize the contract with a trusted oracle address, an admin, and a default token.
     ///
     /// # Panics
@@ -205,6 +219,8 @@ impl EscrowContract {
             return Err(Error::ContractPaused);
         }
 
+        Self::validate_match_id(&env, match_id)?;
+
         let mut m: Match = env
             .storage()
             .persistent()
@@ -316,6 +332,8 @@ impl EscrowContract {
         }
         caller.require_auth();
 
+        Self::validate_match_id(&env, match_id)?;
+
         let mut m: Match = env
             .storage()
             .persistent()
@@ -384,6 +402,8 @@ impl EscrowContract {
     ///
     /// Cancelation is allowed while the contract is paused so players can recover funds.
     pub fn cancel_match(env: Env, match_id: u64, caller: Address) -> Result<(), Error> {
+        Self::validate_match_id(&env, match_id)?;
+
         let mut m: Match = env
             .storage()
             .persistent()
@@ -490,6 +510,7 @@ impl EscrowContract {
 
     /// Read a match by ID.
     pub fn get_match(env: Env, match_id: u64) -> Result<Match, Error> {
+        Self::validate_match_id(&env, match_id)?;
         env.storage()
             .persistent()
             .get(&DataKey::Match(match_id))

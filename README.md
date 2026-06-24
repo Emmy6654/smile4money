@@ -159,6 +159,7 @@ stellar keys generate deployer --network testnet
 ## 📖 Documentation
 
 - [Architecture Overview](docs/architecture.md)
+- [Deployment Guide](docs/deployment.md)
 - [Oracle Design](docs/oracle.md)
 - [Threat Model & Security](docs/security.md)
 - [Roadmap](docs/roadmap.md)
